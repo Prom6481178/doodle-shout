@@ -82,4 +82,24 @@
         app:layout_constraintTop_toBottomOf="@+id/startButton"
         app:layout_constraintVertical_bias="0.081" />
 
+    <ImageButton
+        android:id="@+id/speakerButton"
+        android:layout_width="77dp"
+        android:layout_height="78dp"
+        android:background="@android:color/transparent"
+        android:contentDescription="Speaker"
+        android:scaleX="2"
+        android:scaleY="2"
+        android:src="@android:drawable/ic_lock_silent_mode_off"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.952"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.975"
+        app:tint="#000000" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

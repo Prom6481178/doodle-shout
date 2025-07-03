@@ -1,8 +1,10 @@
 package com.egci428.doodleshout
 
 import android.content.Intent
+import android.media.MediaPlayer
 import android.os.Bundle
 import android.widget.Button
+import android.widget.ImageButton
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -10,6 +12,9 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 
 class MainActivity : AppCompatActivity() {
+    private var mediaPlayer: MediaPlayer? = null
+    private var isMuted = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -22,6 +27,7 @@ class MainActivity : AppCompatActivity() {
 
         val startButton = findViewById<Button>(R.id.startButton)
         val exitButton = findViewById<Button>(R.id.exitButton)
+        val speakerButton = findViewById<ImageButton>(R.id.speakerButton)
 
         startButton.setOnClickListener {
             val intent = Intent(this, GameActivity::class.java)
@@ -31,5 +37,27 @@ class MainActivity : AppCompatActivity() {
         exitButton.setOnClickListener {
             finishAffinity()
         }
+
+        mediaPlayer = MediaPlayer.create(this, R.raw.bgmusic)
+        mediaPlayer?.isLooping = true
+        mediaPlayer?.setVolume(1.0f, 1.0f)
+        mediaPlayer?.start()
+
+        speakerButton.setOnClickListener {
+            isMuted = !isMuted
+            if (isMuted) {
+                mediaPlayer?.setVolume(0f, 0f)
+                speakerButton.setImageResource(android.R.drawable.ic_lock_silent_mode)
+            } else {
+                mediaPlayer?.setVolume(1f, 1f)
+                speakerButton.setImageResource(android.R.drawable.ic_lock_silent_mode_off)
+            }
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        mediaPlayer?.release()
+        mediaPlayer = null
     }
 }
