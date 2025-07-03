@@ -3,6 +3,7 @@ package com.egci428.doodleshout
 import android.content.Intent
 import android.media.MediaPlayer
 import android.os.Bundle
+import android.util.Log
 import android.widget.Button
 import android.widget.ImageButton
 import android.widget.Toast
@@ -10,6 +11,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import com.egci428.doodleshout.utils.PerlinNoise
 
 class MainActivity : AppCompatActivity() {
     private var mediaPlayer: MediaPlayer? = null
@@ -36,6 +38,17 @@ class MainActivity : AppCompatActivity() {
 
         exitButton.setOnClickListener {
             finishAffinity()
+        }
+
+        val noise = PerlinNoise()
+
+        for (y in 0..10) {
+            var str = ""
+            for (x in 0..10) {
+                val value = noise.noise(x / 10.0, y / 10.0)
+                str += "${"%+5.2f".format(value)} "
+            }
+            Log.d("DoodleDebug", str)
         }
 
         mediaPlayer = MediaPlayer.create(this, R.raw.bgmusic)

@@ -17,4 +17,6 @@ class GameActivity : AppCompatActivity() {
             insets
         }
     }
+
+
 }
