@@ -83,7 +83,8 @@ class MainActivity : AppCompatActivity() {
             val micButton = findViewById<Button>(R.id.micBtn)
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 micButton.text = "Microphone: On"
-            } else {
+            }
+            else {
                 micButton.text = "Microphone: Off"
             }
         }
