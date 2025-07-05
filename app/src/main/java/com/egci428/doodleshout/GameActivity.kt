@@ -16,8 +16,12 @@ import android.media.AudioRecord
 import android.media.MediaRecorder
 import androidx.core.app.ActivityCompat
 import kotlin.math.abs
+import android.util.Log
 
 class GameActivity : AppCompatActivity(), SensorEventListener {
+
+    private val REQUEST_RECORD_AUDIO_PERMISSION = 200
+
     private lateinit var sensorManager: SensorManager
     private var accelerometer: Sensor? = null
     private var gameView: GameView? = null
@@ -30,7 +34,8 @@ class GameActivity : AppCompatActivity(), SensorEventListener {
         AudioFormat.ENCODING_PCM_16BIT
     )
     private val audioReadBufferSize = 512 // Smaller buffer for lower latency
-    private val jumpThreshold = 20000 // Adjust for sensitivity
+    private val jumpThreshold = 16000 // Adjust for sensitivity
+//    private val jumpThreshold = 4000 // for testing
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -74,7 +79,7 @@ class GameActivity : AppCompatActivity(), SensorEventListener {
 
     private fun startAudioRecording() {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-            return
+            requestPermissions(arrayOf(android.Manifest.permission.RECORD_AUDIO), REQUEST_RECORD_AUDIO_PERMISSION)
         }
         if (audioRecord == null) {
             audioRecord = AudioRecord(
@@ -93,11 +98,15 @@ class GameActivity : AppCompatActivity(), SensorEventListener {
                 val read = audioRecord?.read(buffer, 0, buffer.size) ?: 0
                 if (read > 0) {
                     val max = buffer.take(read).maxOf { value: Short -> abs(value.toInt()) }
+//                    val lineCount = max / 300
+//                    val str = "|".repeat(lineCount)
+//                    Log.d("DoodleDebug", "Microphone: ${str}")
+//                    Log.d("DoodleDebug", "max: ${max}")
                     if (max > jumpThreshold) {
                         // Map loudness to jump strength (e.g., 1.0 to 2.5)
                         val strength = 1.0f + ((max - jumpThreshold).coerceAtMost(30000) / 30000f) * 1.5f
                         runOnUiThread {
-                            gameView?.jump(strength)
+                            gameView?.boost(strength)
                         }
                     }
                 }

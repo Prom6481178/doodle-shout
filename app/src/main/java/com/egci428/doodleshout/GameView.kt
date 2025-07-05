@@ -1,14 +1,21 @@
 package com.egci428.doodleshout
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Matrix
 import android.graphics.Paint
 import android.util.AttributeSet
+import android.util.Log
 import android.view.View
+import android.widget.TextView
 import androidx.core.graphics.scale
+import kotlin.math.max
+import kotlin.math.min
+import kotlin.random.Random
 
 class GameView @JvmOverloads constructor(
     context: Context,
@@ -22,35 +29,91 @@ class GameView @JvmOverloads constructor(
 
     private val gridSpacing = 50f
     private var offset = 0f
+    private val platformChance = 70 // percent
+    private val platformPerScreen = 10
 
     private val frameRunnable = object : Runnable {
+        @SuppressLint("DefaultLocale")
         override fun run() {
             // Horizontal handled by accelerometer
             // Vertical physics
-            if (isJumping) {
-                doodlerY += doodlerVelocityY
-                doodlerVelocityY += gravity
-                // Land on platform
-                if (doodlerY + doodlerHeight >= platformY) {
-                    doodlerY = platformY - doodlerHeight + 12f
-                    doodlerVelocityY = 0f
-                    isJumping = false
+//            doodlerY += min(max(doodlerVelocityX, -200.0f), 200.0f)
+            doodlerY += doodlerVelocityY
+
+            doodlerVelocityY += gravity
+            var nothing = true
+            var maxPlatformY = 0.0f
+            for (platform in platformList) {
+                if (platform.y > score + height + 50) {
+                    platformList.remove(platform)
+                    break
                 }
+                if (platform.checkCollision(doodlerX, doodlerY, doodlerWidth, doodlerHeight, doodlerVelocityX, doodlerVelocityY) && doodlerVelocityY >= 0) {
+//                    debug("vx: ${String.format("%+6.2f", doodlerVelocityX)}, vy ${String.format("%+6.2f", doodlerVelocityY)}")
+//                    debug("Colliding ${platformList.indexOf(platform)}")
+//                    jump(2.0f)
+                    jump(1.5f)
+                    nothing = false
+                    break
+                }
+                maxPlatformY = max(maxPlatformY, platform.y)
             }
+//            if (nothing) debug("---")
+            // Land on platform
+            if (doodlerY + doodlerHeight > platformY) {
+                doodlerY = platformY - doodlerHeight
+                doodlerVelocityY = 0f
+            }
+
+//            debug("${doodlerY}, ${score + height / 3}")
+            if (doodlerY < score + height / 3) {
+                score = min(score, doodlerY.toInt() - height / 3)
+            }
+
+            if (doodlerY < lastPlatformY + 3000) {
+                generatePlatform()
+            }
+
             invalidate()
             postOnAnimation(this)
         }
     }
 
-    private var doodlerBitmap: Bitmap = BitmapFactory.decodeResource(resources, R.drawable.doodler)
+    private var score = 0
+
+    private var random = Random(System.currentTimeMillis())
+    private var doodlerBitmapRight: Bitmap = BitmapFactory.decodeResource(resources, R.drawable.doodler)
+    private var doodlerBitmapLeft: Bitmap = doodlerBitmapRight.flipHorizontally()
+    private var currentDoodlerBitmap = doodlerBitmapRight
     private var doodlerX: Float = 0f
     private var doodlerY: Float = 0f
     private var doodlerWidth: Int = 0
     private var doodlerHeight: Int = 0
+    private var lastPlatformY: Float = 0f
 
+    private var platformList = ArrayList<PlatformEntity>()
+    private var platformBitmap: Bitmap = BitmapFactory.decodeResource(resources, R.drawable.platform)
     private val platformPaint = Paint().apply {
         color = Color.BLACK
         style = Paint.Style.FILL
+    }
+    private val debugPaint = Paint().apply {
+        color = Color.RED
+        style = Paint.Style.STROKE
+        strokeWidth = 5.0f
+        textSize = 100.0f
+    }
+    private val fallingPaint = Paint().apply {
+        color = Color.GREEN
+        style = Paint.Style.STROKE
+        strokeWidth = 5.0f
+    }
+    private val scorePaint = Paint().apply {
+        color = Color.BLACK
+        style = Paint.Style.FILL_AND_STROKE
+        strokeWidth = 5.0f
+        textSize = 100.0f
+        typeface = resources.getFont(R.font.doodlejump)
     }
     private var platformWidth: Float = 0f
     private var platformHeight: Float = 0f
@@ -58,10 +121,10 @@ class GameView @JvmOverloads constructor(
     private var platformY: Float = 0f
 
     private var doodlerVelocityX: Float = 0f
-    private val doodlerSpeed = 5f // Reduced for slower movement
+    private val doodlerSpeed = 0.2f // Reduced for slower movement
 
     private var doodlerVelocityY: Float = 0f
-    private var gravity: Float = 1.2f
+    private var gravity: Float = 0.7f
     private var isJumping: Boolean = false
 
     override fun onAttachedToWindow() {
@@ -79,20 +142,51 @@ class GameView @JvmOverloads constructor(
         platformWidth = width.toFloat()
         platformHeight = 24f
         platformX = 0f
-        platformY = height - platformHeight - 16f
+        platformY = height - 16f - platformHeight
 
-        doodlerWidth = width / 6
-        doodlerHeight = (doodlerBitmap.height * (doodlerWidth.toFloat() / doodlerBitmap.width)).toInt()
-        doodlerBitmap = doodlerBitmap.scale(doodlerWidth, doodlerHeight)
+        doodlerWidth = width / 8
+        doodlerHeight = (currentDoodlerBitmap.height * (doodlerWidth.toFloat() / currentDoodlerBitmap.width)).toInt()
+        debug("width: ${doodlerWidth}, height: ${doodlerHeight}")
+        doodlerBitmapRight = doodlerBitmapRight.scale(doodlerWidth, doodlerHeight)
+        doodlerBitmapLeft = doodlerBitmapLeft.scale(doodlerWidth, doodlerHeight)
+
         doodlerX = (width - doodlerWidth) / 2f
-        doodlerY = platformY - doodlerHeight + 12f
+        doodlerY = platformY - doodlerHeight - 100
+        debug("x: ${doodlerX}, y: ${doodlerY}")
+        isJumping = false
+        jump(2.0f)
+
+        lastPlatformY = height * 1.0f
+
+        for (i in 0 .. 80) {
+            generatePlatform()
+        }
+
+    }
+
+    private fun generatePlatform() {
+        lastPlatformY -= height / platformPerScreen
+        if (random.nextInt(100) >= platformChance) {
+            return
+        }
+        var x = random.nextInt(0, width - platformBitmap.width).toFloat()
+        platformList.add(PlatformEntity(x, lastPlatformY, platformBitmap.width, platformBitmap.height))
     }
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         drawBackground(canvas)
-        canvas.drawRect(platformX, platformY, platformX + platformWidth, platformY + platformHeight, platformPaint)
-        canvas.drawBitmap(doodlerBitmap, doodlerX, doodlerY, null)
+        currentDoodlerBitmap = if (doodlerVelocityX > 0) doodlerBitmapRight else doodlerBitmapLeft
+//        canvas.drawRect(platformX, platformY - score, platformX + platformWidth, platformY + platformHeight - score, platformPaint)
+        canvas.drawRect(doodlerX, doodlerY - score, doodlerX + doodlerWidth, doodlerY + doodlerHeight - score, if (doodlerVelocityY >= 0) fallingPaint else debugPaint)
+        for(platform in platformList) {
+            canvas.drawBitmap(platformBitmap, platform.x, platform.y - score, null)
+//            x1 <= x + width && x <= x1 + w1
+            canvas.drawLine(platform.x, platform.y - score, platform.x + platform.width, platform.y - score, debugPaint)
+            canvas.drawText(platformList.indexOf(platform).toString(), platform.x, platform.y - score, debugPaint)
+        }
+        canvas.drawBitmap(currentDoodlerBitmap, doodlerX, doodlerY - score, null)
+        canvas.drawText("Score: ${score / -150}", 20.0f, 120.0f, scorePaint)
     }
 
     private fun drawBackground(canvas: Canvas) {
@@ -102,7 +196,7 @@ class GameView @JvmOverloads constructor(
             x += gridSpacing
         }
 
-        var y = -offset % gridSpacing
+        var y = -score % gridSpacing
         while (y <= height) {
             canvas.drawLine(0f, y, width.toFloat(), y, gridPaint)
             y += gridSpacing
@@ -110,7 +204,8 @@ class GameView @JvmOverloads constructor(
     }
 
     fun onAccelerometerChanged(x: Float) {
-        doodlerVelocityX = -x * doodlerSpeed
+        doodlerVelocityX += -x * doodlerSpeed
+        doodlerVelocityX = min(doodlerVelocityX, 200.0f)
         doodlerX += doodlerVelocityX
         if (doodlerX + doodlerWidth < 0) {
             doodlerX = width.toFloat()
@@ -122,9 +217,28 @@ class GameView @JvmOverloads constructor(
     }
 
     fun jump(strength: Float) {
-        if (!isJumping && doodlerY + doodlerHeight >= platformY) {
-            doodlerVelocityY = -28f * strength // Negative is up
-            isJumping = true
-        }
+        doodlerVelocityY = -28f * strength // Negative is up
+    }
+
+    fun boost(strength: Float) {
+        debug("Boost: ${strength}")
+        doodlerVelocityY -= 1.5f * strength
+        doodlerVelocityY = min(doodlerVelocityY, 100.0f)
+    }
+
+    // To flip horizontally:
+    fun Bitmap.flipHorizontally(): Bitmap {
+        val matrix = Matrix().apply { postScale(-1f, 1f, width / 2f, height / 2f) }
+        return Bitmap.createBitmap(this, 0, 0, width, height, matrix, true)
+    }
+
+    // To flip vertically:
+    fun Bitmap.flipVertically(): Bitmap {
+        val matrix = Matrix().apply { postScale(1f, -1f, width / 2f, height / 2f) }
+        return Bitmap.createBitmap(this, 0, 0, width, height, matrix, true)
+    }
+
+    fun debug(str: String) {
+        Log.d("DoodleDebug", str)
     }
 }

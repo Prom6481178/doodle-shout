@@ -43,17 +43,7 @@ class MainActivity : AppCompatActivity() {
             finishAffinity()
         }
 
-        val noise = PerlinNoise()
-
-        for (y in 0..10) {
-            var str = ""
-            for (x in 0..10) {
-                val value = noise.noise(x / 10.0, y / 10.0)
-                str += "${"%+5.2f".format(value)} "
-            }
-            Log.d("DoodleDebug", str)
-        }
-
+        // Play music
         mediaPlayer = MediaPlayer.create(this, R.raw.bgmusic)
         mediaPlayer?.isLooping = true
         mediaPlayer?.setVolume(1.0f, 1.0f)
@@ -71,9 +61,9 @@ class MainActivity : AppCompatActivity() {
         }
 
         micButton.setOnClickListener {
-            if(ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED){
+//            if(ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED){
                 requestPermissions(arrayOf(android.Manifest.permission.RECORD_AUDIO), REQUEST_RECORD_AUDIO_PERMISSION)
-            }
+//            }
         }
     }
 
