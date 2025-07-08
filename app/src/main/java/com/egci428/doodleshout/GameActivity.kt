@@ -18,6 +18,8 @@ import androidx.core.app.ActivityCompat
 import kotlin.math.abs
 import android.util.Log
 import android.view.MotionEvent
+import android.view.View
+import android.widget.Button
 
 class GameActivity : AppCompatActivity(), SensorEventListener {
 
@@ -36,6 +38,7 @@ class GameActivity : AppCompatActivity(), SensorEventListener {
     )
     private val audioReadBufferSize = 512 // Smaller buffer for lower latency
     private val jumpThreshold = 16000 // Adjust for sensitivity
+    private lateinit var button: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,12 +52,23 @@ class GameActivity : AppCompatActivity(), SensorEventListener {
         gameView = findViewById(R.id.gridView)
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        button = findViewById<Button>(R.id.menuButton)
+
+        button.setOnClickListener {
+            finish()
+        }
 
         // Set up game over callback
         gameView?.setGameOverCallback {
             // You can add additional game over logic here
             // For example, save high score, show dialog, etc.
             Log.d("DoodleDebug", "Game over callback triggered")
+            button.visibility = View.VISIBLE
+        }
+
+        gameView?.setRestartGameCallback {
+            Log.d("DoodleDebug", "Restart")
+            button.visibility = View.INVISIBLE
         }
     }
 

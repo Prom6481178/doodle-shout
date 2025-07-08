@@ -35,6 +35,8 @@ class GameView @JvmOverloads constructor(
     // Game over state
     private var isGameOver = false
     private var gameOverCallback: (() -> Unit)? = null
+    private var restartGameCallback: (() -> Unit)? = null
+
 
     private val frameRunnable = object : Runnable {
         @SuppressLint("DefaultLocale")
@@ -147,7 +149,7 @@ class GameView @JvmOverloads constructor(
     private var platformY: Float = 0f
 
     private var doodlerVelocityX: Float = 0f
-    private val doodlerSpeed = 0.2f // Reduced for slower movement
+    private val doodlerSpeed = 0.5f // Reduced for slower movement
 
     private var doodlerVelocityY: Float = 0f
     private var gravity: Float = 0.7f
@@ -282,8 +284,13 @@ class GameView @JvmOverloads constructor(
         gameOverCallback = callback
     }
 
+    fun setRestartGameCallback(callback: () -> Unit) {
+        restartGameCallback = callback
+    }
+
     fun restartGame() {
         isGameOver = false
+        restartGameCallback?.invoke()
         score = 0
         doodlerX = (width - doodlerWidth) / 2f
         doodlerY = platformY - doodlerHeight - 100
