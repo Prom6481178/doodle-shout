@@ -19,6 +19,7 @@ class MainActivity : AppCompatActivity() {
     private var mediaPlayer: MediaPlayer? = null
     private var isMuted = false
     private val REQUEST_RECORD_AUDIO_PERMISSION = 200
+    private lateinit var SQLiteHelper: MySQLiteHelper
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,6 +30,8 @@ class MainActivity : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+
+        SQLiteHelper = MySQLiteHelper(this)
 
         val startButton = findViewById<Button>(R.id.startButton)
         val exitButton = findViewById<Button>(R.id.exitButton)
