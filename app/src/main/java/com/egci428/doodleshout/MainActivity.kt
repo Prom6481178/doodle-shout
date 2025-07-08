@@ -1,5 +1,6 @@
 package com.egci428.doodleshout
 
+import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.MediaPlayer
@@ -11,6 +12,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -57,8 +59,13 @@ class MainActivity : AppCompatActivity() {
         val micButton = findViewById<Button>(R.id.micBtn)
         leaderboardText = findViewById<TextView>(R.id.leaderboardText)
         startButton.setOnClickListener {
-            val intent = Intent(this, GameActivity::class.java)
-            startActivity(intent)
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                val intent = Intent(this, GameActivity::class.java)
+                startActivity(intent)
+            }
+            else {
+                requestPermissions(arrayOf(android.Manifest.permission.RECORD_AUDIO), REQUEST_RECORD_AUDIO_PERMISSION)
+            }
         }
 
         exitButton.setOnClickListener {
