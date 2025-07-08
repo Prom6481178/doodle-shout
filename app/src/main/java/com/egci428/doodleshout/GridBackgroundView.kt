@@ -44,6 +44,7 @@ class GridBackgroundView @JvmOverloads constructor(
         super.onDetachedFromWindow()
     }
 
+    // Call every frame
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 

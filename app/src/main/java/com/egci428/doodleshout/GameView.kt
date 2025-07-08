@@ -38,18 +38,15 @@ class GameView @JvmOverloads constructor(
     private var restartGameCallback: (() -> Unit)? = null
 
 
+    // Character movement thread
     private val frameRunnable = object : Runnable {
         @SuppressLint("DefaultLocale")
         override fun run() {
             if (isGameOver) return
 
-            // Horizontal handled by accelerometer
             // Vertical physics
             doodlerY += doodlerVelocityY
-
             doodlerVelocityY += gravity
-            var nothing = true
-            var maxPlatformY = 0.0f
             for (platform in platformList) {
                 if (platform.y > score + height + 50) {
                     platformList.remove(platform)
@@ -57,10 +54,8 @@ class GameView @JvmOverloads constructor(
                 }
                 if (platform.checkCollision(doodlerX, doodlerY, doodlerWidth, doodlerHeight, doodlerVelocityX, doodlerVelocityY) && doodlerVelocityY >= 0) {
                     jump(1.5f)
-                    nothing = false
                     break
                 }
-                maxPlatformY = max(maxPlatformY, platform.y)
             }
 
             // Land on platform
@@ -88,8 +83,10 @@ class GameView @JvmOverloads constructor(
     }
 
     private var score = 0
-
     private var random = Random(System.currentTimeMillis())
+    private var lastPlatformY: Float = 0f
+
+    // Doodler properties
     private var doodlerBitmapRight: Bitmap = BitmapFactory.decodeResource(resources, R.drawable.doodler)
     private var doodlerBitmapLeft: Bitmap = doodlerBitmapRight.flipHorizontally()
     private var currentDoodlerBitmap = doodlerBitmapRight
@@ -97,14 +94,22 @@ class GameView @JvmOverloads constructor(
     private var doodlerY: Float = 0f
     private var doodlerWidth: Int = 0
     private var doodlerHeight: Int = 0
-    private var lastPlatformY: Float = 0f
 
+    // Doodler physics
+    private var doodlerVelocityX: Float = 0f
+    private val doodlerSpeed = 0.5f // Reduced for slower movement
+    private var doodlerVelocityY: Float = 0f
+    private var gravity: Float = 0.7f
+
+    // Platform properties
+    private var platformWidth: Float = 0f
+    private var platformHeight: Float = 0f
+    private var platformX: Float = 0f
+    private var platformY: Float = 0f
     private var platformList = ArrayList<PlatformEntity>()
     private var platformBitmap: Bitmap = BitmapFactory.decodeResource(resources, R.drawable.platform)
-    private val platformPaint = Paint().apply {
-        color = Color.BLACK
-        style = Paint.Style.FILL
-    }
+
+    // Paint
     private val debugPaint = Paint().apply {
         color = Color.RED
         style = Paint.Style.STROKE
@@ -143,17 +148,6 @@ class GameView @JvmOverloads constructor(
         color = Color.argb(200, 255, 255, 255)
         style = Paint.Style.FILL
     }
-    private var platformWidth: Float = 0f
-    private var platformHeight: Float = 0f
-    private var platformX: Float = 0f
-    private var platformY: Float = 0f
-
-    private var doodlerVelocityX: Float = 0f
-    private val doodlerSpeed = 0.5f // Reduced for slower movement
-
-    private var doodlerVelocityY: Float = 0f
-    private var gravity: Float = 0.7f
-    private var isJumping: Boolean = false
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
@@ -167,29 +161,30 @@ class GameView @JvmOverloads constructor(
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
+
+        // Recalculate platform size
         platformWidth = width / 12.0f
         platformHeight = (platformBitmap.height * (platformWidth.toFloat() / platformBitmap.width))
         platformX = 0f
         platformY = height - 16f - platformHeight
         platformBitmap = platformBitmap.scale(platformWidth.toInt(), platformHeight.toInt())
 
+        // Recalculate doodler size
         doodlerWidth = width / 8
         doodlerHeight = (currentDoodlerBitmap.height * (doodlerWidth.toFloat() / currentDoodlerBitmap.width)).toInt()
         debug("width: ${doodlerWidth}, height: ${doodlerHeight}")
         doodlerBitmapRight = doodlerBitmapRight.scale(doodlerWidth, doodlerHeight)
         doodlerBitmapLeft = doodlerBitmapLeft.scale(doodlerWidth, doodlerHeight)
 
+        // Spawn with boost
         doodlerX = (width - doodlerWidth) / 2f
         doodlerY = platformY - doodlerHeight - 100
         debug("x: ${doodlerX}, y: ${doodlerY}")
-
-        //
-
-        isJumping = false
         jump(2.0f)
 
         lastPlatformY = height * 1.0f
 
+        // Pre-generate platform when start
         for (i in 0 .. 80) {
             generatePlatform()
         }
@@ -197,6 +192,7 @@ class GameView @JvmOverloads constructor(
     }
 
     private fun generatePlatform() {
+        // Randomly generate platform with chance
         lastPlatformY -= height / platformPerScreen
         if (random.nextInt(100) >= platformChance) {
             return
@@ -205,6 +201,7 @@ class GameView @JvmOverloads constructor(
         platformList.add(PlatformEntity(x, lastPlatformY, platformBitmap.width, platformBitmap.height))
     }
 
+    // Call every frame
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         drawBackground(canvas)
