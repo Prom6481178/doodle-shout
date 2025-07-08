@@ -17,6 +17,7 @@ import android.media.MediaRecorder
 import androidx.core.app.ActivityCompat
 import kotlin.math.abs
 import android.util.Log
+import android.view.MotionEvent
 
 class GameActivity : AppCompatActivity(), SensorEventListener {
 
@@ -35,7 +36,6 @@ class GameActivity : AppCompatActivity(), SensorEventListener {
     )
     private val audioReadBufferSize = 512 // Smaller buffer for lower latency
     private val jumpThreshold = 16000 // Adjust for sensitivity
-//    private val jumpThreshold = 4000 // for testing
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,6 +49,13 @@ class GameActivity : AppCompatActivity(), SensorEventListener {
         gameView = findViewById(R.id.gridView)
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+
+        // Set up game over callback
+        gameView?.setGameOverCallback {
+            // You can add additional game over logic here
+            // For example, save high score, show dialog, etc.
+            Log.d("DoodleDebug", "Game over callback triggered")
+        }
     }
 
     override fun onResume() {
@@ -77,6 +84,16 @@ class GameActivity : AppCompatActivity(), SensorEventListener {
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
 
+    override fun onTouchEvent(event: MotionEvent?): Boolean {
+        if (event?.action == MotionEvent.ACTION_DOWN) {
+            if (gameView?.isGameOver() == true) {
+                gameView?.restartGame()
+                return true
+            }
+        }
+        return super.onTouchEvent(event)
+    }
+
     private fun startAudioRecording() {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(arrayOf(android.Manifest.permission.RECORD_AUDIO), REQUEST_RECORD_AUDIO_PERMISSION)
@@ -98,10 +115,6 @@ class GameActivity : AppCompatActivity(), SensorEventListener {
                 val read = audioRecord?.read(buffer, 0, buffer.size) ?: 0
                 if (read > 0) {
                     val max = buffer.take(read).maxOf { value: Short -> abs(value.toInt()) }
-//                    val lineCount = max / 300
-//                    val str = "|".repeat(lineCount)
-//                    Log.d("DoodleDebug", "Microphone: ${str}")
-//                    Log.d("DoodleDebug", "max: ${max}")
                     if (max > jumpThreshold) {
                         // Map loudness to jump strength (e.g., 1.0 to 2.5)
                         val strength = 1.0f + ((max - jumpThreshold).coerceAtMost(30000) / 30000f) * 1.5f

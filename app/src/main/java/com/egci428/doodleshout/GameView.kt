@@ -32,12 +32,17 @@ class GameView @JvmOverloads constructor(
     private val platformChance = 70 // percent
     private val platformPerScreen = 10
 
+    // Game over state
+    private var isGameOver = false
+    private var gameOverCallback: (() -> Unit)? = null
+
     private val frameRunnable = object : Runnable {
         @SuppressLint("DefaultLocale")
         override fun run() {
+            if (isGameOver) return
+
             // Horizontal handled by accelerometer
             // Vertical physics
-//            doodlerY += min(max(doodlerVelocityX, -200.0f), 200.0f)
             doodlerY += doodlerVelocityY
 
             doodlerVelocityY += gravity
@@ -49,29 +54,30 @@ class GameView @JvmOverloads constructor(
                     break
                 }
                 if (platform.checkCollision(doodlerX, doodlerY, doodlerWidth, doodlerHeight, doodlerVelocityX, doodlerVelocityY) && doodlerVelocityY >= 0) {
-//                    debug("vx: ${String.format("%+6.2f", doodlerVelocityX)}, vy ${String.format("%+6.2f", doodlerVelocityY)}")
-//                    debug("Colliding ${platformList.indexOf(platform)}")
-//                    jump(2.0f)
                     jump(1.5f)
                     nothing = false
                     break
                 }
                 maxPlatformY = max(maxPlatformY, platform.y)
             }
-//            if (nothing) debug("---")
+
             // Land on platform
             if (doodlerY + doodlerHeight > platformY) {
                 doodlerY = platformY - doodlerHeight
                 doodlerVelocityY = 0f
             }
 
-//            debug("${doodlerY}, ${score + height / 3}")
             if (doodlerY < score + height / 3) {
                 score = min(score, doodlerY.toInt() - height / 3)
             }
 
             if (doodlerY < lastPlatformY + 3000) {
                 generatePlatform()
+            }
+
+            // Check for game over - if doodler falls below the screen
+            if (doodlerY - score > height + 200) {
+                triggerGameOver()
             }
 
             invalidate()
@@ -114,6 +120,26 @@ class GameView @JvmOverloads constructor(
         strokeWidth = 5.0f
         textSize = 100.0f
         typeface = resources.getFont(R.font.doodlejump)
+    }
+    private val gameOverPaint = Paint().apply {
+        color = Color.RED
+        style = Paint.Style.FILL_AND_STROKE
+        strokeWidth = 3.0f
+        textSize = 120.0f
+        typeface = resources.getFont(R.font.doodlejump)
+        textAlign = Paint.Align.CENTER
+    }
+    private val gameOverSubPaint = Paint().apply {
+        color = Color.BLACK
+        style = Paint.Style.FILL_AND_STROKE
+        strokeWidth = 2.0f
+        textSize = 60.0f
+        typeface = resources.getFont(R.font.doodlejump)
+        textAlign = Paint.Align.CENTER
+    }
+    private val gameOverBackgroundPaint = Paint().apply {
+        color = Color.argb(200, 255, 255, 255)
+        style = Paint.Style.FILL
     }
     private var platformWidth: Float = 0f
     private var platformHeight: Float = 0f
@@ -177,16 +203,32 @@ class GameView @JvmOverloads constructor(
         super.onDraw(canvas)
         drawBackground(canvas)
         currentDoodlerBitmap = if (doodlerVelocityX > 0) doodlerBitmapRight else doodlerBitmapLeft
-//        canvas.drawRect(platformX, platformY - score, platformX + platformWidth, platformY + platformHeight - score, platformPaint)
         canvas.drawRect(doodlerX, doodlerY - score, doodlerX + doodlerWidth, doodlerY + doodlerHeight - score, if (doodlerVelocityY >= 0) fallingPaint else debugPaint)
         for(platform in platformList) {
             canvas.drawBitmap(platformBitmap, platform.x, platform.y - score, null)
-//            x1 <= x + width && x <= x1 + w1
             canvas.drawLine(platform.x, platform.y - score, platform.x + platform.width, platform.y - score, debugPaint)
             canvas.drawText(platformList.indexOf(platform).toString(), platform.x, platform.y - score, debugPaint)
         }
         canvas.drawBitmap(currentDoodlerBitmap, doodlerX, doodlerY - score, null)
         canvas.drawText("Score: ${score / -150}", 20.0f, 120.0f, scorePaint)
+
+        // Draw game over overlay
+        if (isGameOver) {
+            drawGameOver(canvas)
+        }
+    }
+
+    private fun drawGameOver(canvas: Canvas) {
+        // Draw semi-transparent background
+        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), gameOverBackgroundPaint)
+
+        // Draw game over text
+        val centerX = width / 2f
+        val centerY = height / 2f
+
+        canvas.drawText("GAME OVER", centerX, centerY - 100, gameOverPaint)
+        canvas.drawText("Final Score: ${score / -150}", centerX, centerY - 20, gameOverSubPaint)
+        canvas.drawText("Tap to restart", centerX, centerY + 60, gameOverSubPaint)
     }
 
     private fun drawBackground(canvas: Canvas) {
@@ -204,6 +246,8 @@ class GameView @JvmOverloads constructor(
     }
 
     fun onAccelerometerChanged(x: Float) {
+        if (isGameOver) return
+
         doodlerVelocityX += -x * doodlerSpeed
         doodlerVelocityX = min(doodlerVelocityX, 200.0f)
         doodlerX += doodlerVelocityX
@@ -217,13 +261,47 @@ class GameView @JvmOverloads constructor(
     }
 
     fun jump(strength: Float) {
+        if (isGameOver) return
         doodlerVelocityY = -28f * strength // Negative is up
     }
 
     fun boost(strength: Float) {
+        if (isGameOver) return
         debug("Boost: ${strength}")
         doodlerVelocityY -= 1.5f * strength
         doodlerVelocityY = min(doodlerVelocityY, 100.0f)
+    }
+
+    private fun triggerGameOver() {
+        isGameOver = true
+        debug("Game Over! Final Score: ${score / -150}")
+        gameOverCallback?.invoke()
+    }
+
+    fun setGameOverCallback(callback: () -> Unit) {
+        gameOverCallback = callback
+    }
+
+    fun restartGame() {
+        isGameOver = false
+        score = 0
+        doodlerX = (width - doodlerWidth) / 2f
+        doodlerY = platformY - doodlerHeight - 100
+        doodlerVelocityX = 0f
+        doodlerVelocityY = 0f
+        lastPlatformY = height * 1.0f
+        platformList.clear()
+
+        for (i in 0 .. 80) {
+            generatePlatform()
+        }
+
+        jump(2.0f)
+        postOnAnimation(frameRunnable)
+    }
+
+    fun isGameOver(): Boolean {
+        return isGameOver
     }
 
     // To flip horizontally:
