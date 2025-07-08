@@ -16,7 +16,6 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import com.egci428.doodleshout.utils.PerlinNoise
 
 class MainActivity : AppCompatActivity() {
     private var mediaPlayer: MediaPlayer? = null

@@ -7,7 +7,6 @@ import android.graphics.Paint
 import android.util.AttributeSet
 import android.util.Log
 import android.view.View
-import com.egci428.doodleshout.utils.PerlinNoise
 
 class GridBackgroundView @JvmOverloads constructor(
     context: Context,
