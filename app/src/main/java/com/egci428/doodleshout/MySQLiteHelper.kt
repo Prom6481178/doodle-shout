@@ -18,14 +18,12 @@ class MySQLiteHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         // Column names
         private const val COLUMN_ID = "id"
         private const val COLUMN_SCORE = "score"
-        private const val COLUMN_TIMESTAMP = "timestamp"
 
         // Create table SQL query
         private const val CREATE_SCORES_TABLE = """
             CREATE TABLE $TABLE_SCORES (
                 $COLUMN_ID INTEGER PRIMARY KEY AUTOINCREMENT,
-                $COLUMN_SCORE INTEGER NOT NULL,
-                $COLUMN_TIMESTAMP INTEGER NOT NULL
+                $COLUMN_SCORE INTEGER NOT NULL
             )
         """
     }
@@ -48,7 +46,6 @@ class MySQLiteHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         val db = this.writableDatabase
         val values = ContentValues().apply {
             put(COLUMN_SCORE, score)
-            put(COLUMN_TIMESTAMP, System.currentTimeMillis())
         }
 
         val result = db.insert(TABLE_SCORES, null, values)
@@ -91,9 +88,8 @@ class MySQLiteHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             do {
                 val id = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_ID))
                 val score = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_SCORE))
-                val timestamp = cursor.getLong(cursor.getColumnIndexOrThrow(COLUMN_TIMESTAMP))
 
-                scores.add(ScoreEntry(id, score, timestamp))
+                scores.add(ScoreEntry(id, score))
             } while (cursor.moveToNext())
         }
 
@@ -107,7 +103,7 @@ class MySQLiteHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
     /**
      * Get top N scores
      */
-    fun getTopScores(limit: Int = 10): List<ScoreEntry> {
+    fun getTopScores(limit: Int = 5): List<ScoreEntry> {
         val scores = mutableListOf<ScoreEntry>()
         val db = this.readableDatabase
         val query = "SELECT * FROM $TABLE_SCORES ORDER BY $COLUMN_SCORE DESC LIMIT $limit"
@@ -117,9 +113,8 @@ class MySQLiteHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             do {
                 val id = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_ID))
                 val score = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_SCORE))
-                val timestamp = cursor.getLong(cursor.getColumnIndexOrThrow(COLUMN_TIMESTAMP))
 
-                scores.add(ScoreEntry(id, score, timestamp))
+                scores.add(ScoreEntry(id, score))
             } while (cursor.moveToNext())
         }
 

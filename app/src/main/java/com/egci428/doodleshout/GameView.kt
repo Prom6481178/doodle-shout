@@ -167,10 +167,11 @@ class GameView @JvmOverloads constructor(
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
-        platformWidth = width.toFloat()
-        platformHeight = 24f
+        platformWidth = width / 12.0f
+        platformHeight = (platformBitmap.height * (platformWidth.toFloat() / platformBitmap.width))
         platformX = 0f
         platformY = height - 16f - platformHeight
+        platformBitmap = platformBitmap.scale(platformWidth.toInt(), platformHeight.toInt())
 
         doodlerWidth = width / 8
         doodlerHeight = (currentDoodlerBitmap.height * (doodlerWidth.toFloat() / currentDoodlerBitmap.width)).toInt()
@@ -181,6 +182,9 @@ class GameView @JvmOverloads constructor(
         doodlerX = (width - doodlerWidth) / 2f
         doodlerY = platformY - doodlerHeight - 100
         debug("x: ${doodlerX}, y: ${doodlerY}")
+
+        //
+
         isJumping = false
         jump(2.0f)
 
@@ -205,11 +209,11 @@ class GameView @JvmOverloads constructor(
         super.onDraw(canvas)
         drawBackground(canvas)
         currentDoodlerBitmap = if (doodlerVelocityX > 0) doodlerBitmapRight else doodlerBitmapLeft
-        canvas.drawRect(doodlerX, doodlerY - score, doodlerX + doodlerWidth, doodlerY + doodlerHeight - score, if (doodlerVelocityY >= 0) fallingPaint else debugPaint)
+//        canvas.drawRect(doodlerX, doodlerY - score, doodlerX + doodlerWidth, doodlerY + doodlerHeight - score, if (doodlerVelocityY >= 0) fallingPaint else debugPaint)
         for(platform in platformList) {
             canvas.drawBitmap(platformBitmap, platform.x, platform.y - score, null)
-            canvas.drawLine(platform.x, platform.y - score, platform.x + platform.width, platform.y - score, debugPaint)
-            canvas.drawText(platformList.indexOf(platform).toString(), platform.x, platform.y - score, debugPaint)
+//            canvas.drawLine(platform.x, platform.y - score, platform.x + platform.width, platform.y - score, debugPaint)
+//            canvas.drawText(platformList.indexOf(platform).toString(), platform.x, platform.y - score, debugPaint)
         }
         canvas.drawBitmap(currentDoodlerBitmap, doodlerX, doodlerY - score, null)
         canvas.drawText("Score: ${score / -150}", 20.0f, 120.0f, scorePaint)
@@ -278,6 +282,8 @@ class GameView @JvmOverloads constructor(
         isGameOver = true
         debug("Game Over! Final Score: ${score / -150}")
         gameOverCallback?.invoke()
+        MainActivity.SQLiteHelper.insertScore(score / -150)
+        MainActivity.updateLeaderboard()
     }
 
     fun setGameOverCallback(callback: () -> Unit) {
