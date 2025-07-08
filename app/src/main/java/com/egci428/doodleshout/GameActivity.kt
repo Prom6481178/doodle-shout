@@ -28,14 +28,14 @@ class GameActivity : AppCompatActivity(), SensorEventListener {
     private lateinit var sensorManager: SensorManager
     private var accelerometer: Sensor? = null
     private var gameView: GameView? = null
-    private var audioRecord: AudioRecord? = null
-    private var audioThread: Thread? = null
+    private var audioRecord: AudioRecord? = null // Sensor for detecting sound from microphone
+    private var audioThread: Thread? = null // Sensor for detecting the sound strength
     private var isRecording = false
     private val audioBufferSize = AudioRecord.getMinBufferSize(
         44100,
         AudioFormat.CHANNEL_IN_MONO,
         AudioFormat.ENCODING_PCM_16BIT
-    )
+    ) // calculates the minimum buffer size needed for audio recording in Android
     private val audioReadBufferSize = 512 // Smaller buffer for lower latency
     private val jumpThreshold = 16000 // Adjust for sensitivity
     private lateinit var button: Button
@@ -60,12 +60,11 @@ class GameActivity : AppCompatActivity(), SensorEventListener {
 
         // Set up game over callback
         gameView?.setGameOverCallback {
-            // You can add additional game over logic here
-            // For example, save high score, show dialog, etc.
             Log.d("DoodleDebug", "Game over callback triggered")
             button.visibility = View.VISIBLE
         }
 
+        // Set up restart game callback
         gameView?.setRestartGameCallback {
             Log.d("DoodleDebug", "Restart")
             button.visibility = View.INVISIBLE
@@ -99,6 +98,7 @@ class GameActivity : AppCompatActivity(), SensorEventListener {
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
+        // Handle touch events to restart the game
         if (event?.action == MotionEvent.ACTION_DOWN) {
             if (gameView?.isGameOver() == true) {
                 gameView?.restartGame()
@@ -123,6 +123,10 @@ class GameActivity : AppCompatActivity(), SensorEventListener {
         }
         isRecording = true
         audioRecord?.startRecording()
+
+        /* Start a new thread for detecting sound strength.
+           Handle the case that if the sensor receive louder sound,
+           then the character should jump higher */
         audioThread = Thread {
             val buffer = ShortArray(audioReadBufferSize)
             while (isRecording) {

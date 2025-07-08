@@ -39,9 +39,8 @@ class MySQLiteHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         Log.d("DatabaseHelper", "Database upgraded from version $oldVersion to $newVersion")
     }
 
-    /**
-     * Insert a new score into the database
-     */
+
+     // Insert a new score into the database
     fun insertScore(score: Int): Long {
         val db = this.writableDatabase
         val values = ContentValues().apply {
@@ -55,54 +54,8 @@ class MySQLiteHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         return result
     }
 
-    /**
-     * Get the highest score from the database
-     */
-    fun getHighScore(): Int {
-        val db = this.readableDatabase
-        val query = "SELECT MAX($COLUMN_SCORE) FROM $TABLE_SCORES"
-        val cursor = db.rawQuery(query, null)
 
-        var highScore = 0
-        if (cursor.moveToFirst()) {
-            highScore = cursor.getInt(0)
-        }
-
-        cursor.close()
-        db.close()
-
-        Log.d("DatabaseHelper", "High score retrieved: $highScore")
-        return highScore
-    }
-
-    /**
-     * Get all scores ordered by score (highest first)
-     */
-    fun getAllScores(): List<ScoreEntry> {
-        val scores = mutableListOf<ScoreEntry>()
-        val db = this.readableDatabase
-        val query = "SELECT * FROM $TABLE_SCORES ORDER BY $COLUMN_SCORE DESC"
-        val cursor = db.rawQuery(query, null)
-
-        if (cursor.moveToFirst()) {
-            do {
-                val id = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_ID))
-                val score = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_SCORE))
-
-                scores.add(ScoreEntry(id, score))
-            } while (cursor.moveToNext())
-        }
-
-        cursor.close()
-        db.close()
-
-        Log.d("DatabaseHelper", "Retrieved ${scores.size} scores")
-        return scores
-    }
-
-    /**
-     * Get top N scores
-     */
+    // Get top N scores
     fun getTopScores(limit: Int = 5): List<ScoreEntry> {
         val scores = mutableListOf<ScoreEntry>()
         val db = this.readableDatabase
@@ -122,15 +75,5 @@ class MySQLiteHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         db.close()
 
         return scores
-    }
-
-    /**
-     * Delete all scores (for testing purposes)
-     */
-    fun clearAllScores() {
-        val db = this.writableDatabase
-        db.delete(TABLE_SCORES, null, null)
-        db.close()
-        Log.d("DatabaseHelper", "All scores cleared")
     }
 }

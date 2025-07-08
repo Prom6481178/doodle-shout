@@ -18,13 +18,14 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 
 class MainActivity : AppCompatActivity() {
-    private var mediaPlayer: MediaPlayer? = null
+    private var mediaPlayer: MediaPlayer? = null // Media player for background music
     private var isMuted = false
     private val REQUEST_RECORD_AUDIO_PERMISSION = 200
     companion object {
         private lateinit var leaderboardText: TextView
         public lateinit var SQLiteHelper: MySQLiteHelper
 
+        // Update leaderboard text
         public fun updateLeaderboard() {
             try {
                 val topScore = SQLiteHelper.getTopScores(5)
@@ -50,13 +51,15 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
+        // Initialize the database
         SQLiteHelper = MySQLiteHelper(this)
 
         val startButton = findViewById<Button>(R.id.startButton)
         val exitButton = findViewById<Button>(R.id.exitButton)
         val speakerButton = findViewById<ImageButton>(R.id.speakerButton)
-        val micButton = findViewById<Button>(R.id.micBtn)
         leaderboardText = findViewById<TextView>(R.id.leaderboardText)
+
+        // Starting button with condition to check if the microphone permission is granted, else request it
         startButton.setOnClickListener {
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
                 val intent = Intent(this, GameActivity::class.java)
@@ -67,16 +70,17 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        // Exit button to exit the game
         exitButton.setOnClickListener {
             finishAffinity()
         }
 
-        // Play music
+        /* Set up the media player to run the background music in loop.
+         User allow to mute and un-mute the music by pressing the speaker button*/
         mediaPlayer = MediaPlayer.create(this, R.raw.bgmusic)
         mediaPlayer?.isLooping = true
         mediaPlayer?.setVolume(1.0f, 1.0f)
         mediaPlayer?.start()
-
         speakerButton.setOnClickListener {
             isMuted = !isMuted
             if (isMuted) {
@@ -87,29 +91,9 @@ class MainActivity : AppCompatActivity() {
                 speakerButton.setImageResource(android.R.drawable.ic_lock_silent_mode_off)
             }
         }
+
+        // Everytime when the user done a game in each round, update the leaderboard
         updateLeaderboard()
-
-        micButton.setOnClickListener {
-//            if(ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED){
-            requestPermissions(arrayOf(android.Manifest.permission.RECORD_AUDIO), REQUEST_RECORD_AUDIO_PERMISSION)
-//            }
-        }
-
-    }
-
-
-
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQUEST_RECORD_AUDIO_PERMISSION) {
-            val micButton = findViewById<Button>(R.id.micBtn)
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                micButton.text = "Microphone: On"
-            }
-            else {
-                micButton.text = "Microphone: Off"
-            }
-        }
     }
 
     override fun onDestroy() {
